@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Frontline Response Manager</title>
+<style>
+:root{--bg:#f5f7fa;--panel:#fff;--bd:#e3e8ef;--tx:#1a2233;--mut:#6b7689;--ac:#1d4ed8;--acs:#e8efff;--ph:#fff4d6;--phb:#f0c24b;--ok:#15803d;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0f1420;--panel:#181f2e;--bd:#2a3347;--tx:#e6ebf5;--mut:#93a0b8;--ac:#6b9bff;--acs:#1f2c4d;--ph:#4a3d14;--phb:#b8912e;--ok:#4ade80}}
+*{box-sizing:border-box}html,body{margin:0}
+body{font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx)}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--bd);padding:8px 16px 0}
+.bar{display:flex;align-items:center;gap:6px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}
+.bar.sub{border-top:1px solid var(--bd);padding-top:8px}
+nav .logo{font-weight:700;font-size:15px;margin-right:6px;padding:4px 8px}.logo span{color:var(--ac)}
+nav button{display:flex;align-items:center;gap:5px;flex:none;background:none;border:1px solid transparent;color:var(--tx);padding:5px 9px;border-radius:8px;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
+nav button:hover{background:var(--bg)}nav button.on{background:var(--acs);color:var(--ac);font-weight:600;border-color:var(--ac)}
+nav .big{padding:6px 14px;flex:1;justify-content:center}.ic{font-size:14px;line-height:1}.big .ic{font-size:19px}.big span:not(.ic){display:none}
+.sub button{padding:6px 14px;flex:1;justify-content:center;color:var(--mut)}.sub .ic{font-size:19px}.sub button span:not(.ic){display:none}
+.sep{width:1px;height:24px;background:var(--bd);margin:0 6px;flex:none}
+.n{font-size:11px;color:var(--mut);background:var(--bg);border-radius:99px;padding:0 6px}
+main{min-width:0;padding:22px 28px;max-width:960px;margin:0 auto}
+.crumb{font-size:13px;color:var(--mut)}h1{margin:2px 0 14px;font-size:24px}
+.search{width:100%;padding:11px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--panel);color:var(--tx);font:inherit;margin-bottom:18px}
+.search:focus,.ph-in:focus{outline:2px solid var(--ac);outline-offset:-1px}
+.grp{margin:20px 0 8px;font-size:13px;font-weight:600;color:var(--mut)}
+.card{background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 1px 2px rgba(20,30,50,.05)}
+.hd{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.card h3{margin:0;font-size:16px}.desc{margin:2px 0 10px;font-size:13px;color:var(--mut)}
+.tag{display:inline-block;font-size:11px;background:var(--acs);color:var(--ac);padding:1px 8px;border-radius:99px;margin-left:6px;vertical-align:1px;font-weight:500}
+.txt{white-space:pre-wrap;background:var(--bg);border-radius:8px;padding:12px 14px;margin:0 0 12px;user-select:text}
+.ph{background:var(--ph);border-bottom:2px solid var(--phb);border-radius:3px;padding:0 2px}
+mark{background:#ffe27a;color:#222;border-radius:2px}
+.fields{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.fields label{font-size:12px;color:var(--mut);display:flex;flex-direction:column;gap:2px}
+.ph-in{padding:6px 9px;border:1px solid var(--bd);border-radius:7px;background:var(--panel);color:var(--tx);font:inherit;font-size:13px;width:170px}
+.row{display:flex;gap:8px}
+.btn{border:1px solid var(--bd);background:var(--panel);color:var(--tx);border-radius:8px;padding:7px 14px;font:inherit;font-size:14px;cursor:pointer;transition:background .15s}
+.btn:hover{background:var(--bg)}
+.cp{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:600}.cp:hover{background:var(--ac);opacity:.9}.cp.done{background:var(--ok);border-color:var(--ok)}
+.fav{font-size:18px;line-height:1;padding:4px 8px;background:none;border:0;cursor:pointer;color:var(--mut)}.fav.on{color:#e0a100}
+.empty{text-align:center;color:var(--mut);padding:50px 10px;border:1px dashed var(--bd);border-radius:12px}
+#toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translate(-50%,20px);background:#14202e;color:#fff;padding:9px 18px;border-radius:99px;opacity:0;transition:.2s;pointer-events:none;font-size:14px}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+@media(max-width:760px){main{padding:16px}}
+</style>
+</head>
+<body>
+<header><nav id="nav"></nav></header>
+<main>
+<div class="crumb" id="crumb"></div><h1 id="title"></h1>
+<input class="search" id="q" type="search" placeholder="Search all responses… (press / to focus)" autocomplete="off">
+<div id="list"></div>
+</main>
+<div id="toast"></div>
+<script>
+/* ===== DATA — edit/add responses here =====
+   R(group, category, title, whenToUse, text)  — group: flight|hotel|car|general
+   Use [Placeholder Name] in text to get editable fields. */
+const R=(t,c,title,desc,text)=>({t,c,title,desc,text});
+const TYPES={general:"💬 General",flight:"✈️ Flight",hotel:"🏨 Hotel",car:"🚗 Car"};
+const CATICON={Cancellation:"❌",Change:"🔄",Miscellaneous:"🧩",Greetings:"👋",Closures:"✅",Disconnections:"⏳"};
+const CATS={general:["Greetings","Closures","Disconnections"],flight:["Cancellation","Change","Miscellaneous"],hotel:["Cancellation","Change","Miscellaneous"],car:["Cancellation","Change","Miscellaneous"]};
+const DATA=[
+R("general","Greetings","Standard Greeting","Start of every chat.",`Hi there! 👋 Welcome to Expedia! My name is Mohamed, and I'll be happy to assist you today. How can I help?`),
+R("general","Greetings","Friendly Greeting","Warmer opening.",`Hello! 😊 Thanks for reaching out to Expedia. I'm Mohamed, and I'll be taking care of you today. What can I help you with?`),
+R("general","Closures","Standard Closure","Issue resolved.",`I'm glad I could help! 😊 Thank you for choosing Expedia, and I hope you have a wonderful day ahead!`),
+R("general","Closures","Friendly Closure","Friendly wrap-up.",`It's been a pleasure assisting you today! Thanks for your time, and don't hesitate to reach out if you need anything else. Take care! 👋`),
+R("general","Closures","Positive Experience / Feedback","Customer is happy; invite feedback.",`I'm really glad I could make your experience a positive one! 😊 Your feedback means a lot to us, and we'd love to hear about your experience. Thank you for choosing Expedia, and have a wonderful day! 💙`),
+R("general","Disconnections","First Inactivity Warning","Customer went quiet.",`Just checking in! 😊 Are you still with me? I'd be happy to continue assisting you.`),
+R("general","Disconnections","Closing Inactive Chat","No reply after the warning.",`It looks like we've lost touch, so I'll be closing this chat for now. If you still need assistance, please feel free to reach out again. We'd be happy to help! 👋`),
+
+R("flight","Cancellation","Non-refundable & Non-changeable","Fare allows neither refund nor changes.",`I've checked the fare conditions, and unfortunately, this ticket is non-refundable and non-changeable. This means the airline doesn't allow cancellations for a refund or modifications to the booking. I understand this may not be the outcome you were hoping for, and I appreciate your understanding.`),
+R("flight","Cancellation","Non-refundable With Airline Credit Option","No cash refund, but airline offers credit.",`I've checked the ticket conditions, and although the booking isn't eligible for a cash refund, the airline does allow cancellation in exchange for a travel credit. This credit can be used toward a future booking, subject to the airline's terms and conditions. Would you like me to look into this option for you? 😊`),
+R("flight","Cancellation","Fully Refundable","Ticket is fully refundable.",`Good news! 😊 Your ticket is fully refundable, which means you're eligible to receive a full refund if you decide to cancel. The refund will be issued to your original form of payment once the cancellation is completed and processed.`),
+R("flight","Cancellation","Refund Due to Involuntary Circumstances","Airline-caused change or disruption.",`I've checked the booking, and you're eligible for a refund due to the involuntary change or disruption affecting your flight. I understand how inconvenient this situation can be, and I'll be happy to help you with the refund process.`),
+R("flight","Cancellation","Refundable With a Cancellation Fee","Refundable, airline charges a fee.",`Your ticket is refundable, which is great news! However, the airline applies a cancellation fee of [Fee Amount]. This amount will be deducted from the refundable balance, and the remaining amount will be returned to your original form of payment.`),
+R("flight","Cancellation","Non-refundable With Travel Insurance","No refund, but insurance was purchased.",`I've checked the ticket conditions, and unfortunately, the airline doesn't allow a refund for this cancellation. However, I can see that travel insurance was purchased with your booking. I can provide you with the insurance policy details so you can contact the insurance provider and check whether your situation qualifies for a claim. 😊`),
+R("flight","Change","Non-changeable Ticket","Fare doesn't allow changes.",`I've checked the ticket conditions, and unfortunately, this fare doesn't allow any changes to the booking. I understand that plans can change, and I'm sorry we don't have more flexibility with this ticket.`),
+R("flight","Change","Changeable With a Fee + Fare Difference","Change allowed with fee and possible fare difference.",`Good news! Your ticket allows changes. 😊 However, the airline applies a change fee of [Fee Amount], and there may also be a fare difference depending on the new flight you choose. I'll be happy to check the available options and give you the total cost before proceeding.`),
+R("flight","Change","Changeable Without a Fee + Fare Difference","Change allowed, no fee, possible fare difference.",`Good news! Your ticket allows changes without an additional change fee. However, if your new flight is more expensive than the original one, you'll only need to pay the fare difference, if applicable. 😊`),
+R("flight","Miscellaneous","New Booking – Website / Mobile App","Customer wants a new reservation.",`If you're planning to make a new reservation, I'd recommend checking our Expedia website or mobile app. 😊 You'll be able to explore the available options, compare prices, and check any current promotions or member offers that may be available. It's a convenient way to find a deal that works best for you!`),
+R("flight","Miscellaneous","Visa & Passport Requirements","Entry document questions.",`For visa and passport requirements, I'd recommend contacting the airline or the embassy/consulate of your destination country directly. They can provide the most accurate and up-to-date information to make sure you have everything needed for your trip. 🌍`),
+R("flight","Miscellaneous","Future Travel Credit – Terms & Conditions","Explaining how airline credit works.",`I'd be happy to explain how your future travel credit works! Please keep in mind that the credit is subject to the following conditions:
+
+• Same passenger: It must be used by the same passenger named on the original booking.
+• Same origin: Travel must depart from the same country as the original booking.
+• Same airline: It must be used with the airline that originally issued the credit.
+• Non-transferable: The credit cannot be transferred to another person.
+• Penalty: An applicable penalty may apply when redeeming the credit.
+• Validity: Both the new booking and travel must be completed by [Expiration Date], as specified by the airline.
+
+Please note that all conditions are subject to the airline's specific credit rules. 😊`),
+R("flight","Miscellaneous","Airline-Handled Requests","Only the airline can handle it.",`For this particular request, the airline would be the best point of contact, as they handle this matter directly. Would you like me to provide you with their contact number so you can reach them?`),
+R("flight","Miscellaneous","Payment Collection – Phone Call","Taking payment by phone.",`I'll arrange to give you a call so we can securely complete the payment process. I'll walk you through the next steps and make sure everything is handled properly. 😊`),
+R("flight","Miscellaneous","Condolences","Customer shares a loss.",`I'm truly sorry for your loss. Please accept my deepest condolences during this difficult time. I understand this must be a very challenging moment for you and your family.`),
+R("flight","Miscellaneous","Get Well Soon / Medical Wishes","Customer or family is unwell.",`I'm sorry to hear that you're going through this. I hope you feel better soon and wish you a smooth and speedy recovery. Please take good care of yourself! 💙`),
+R("flight","Miscellaneous","Seat Selection – Important Information","Seat requests aren't guaranteed.",`Just a quick note regarding your seat selection! 😊 Any seat requests made during the booking process are generally subject to the airline's approval and aren't guaranteed unless the seat selection has been successfully confirmed and paid for, where applicable.
+
+Most standard seat requests are accepted automatically, but the airline may still decline or change them. If a paid seat selection couldn't be processed due to an unsuccessful payment, the seat won't be confirmed.`),
+
+R("hotel","Cancellation","Non-refundable Reservation","Booking has a non-refundable policy.",`I've checked the reservation details, and unfortunately, this booking has a non-refundable policy. This means the property doesn't allow cancellations with a refund. I understand this might be disappointing, and I appreciate your understanding.`),
+R("hotel","Cancellation","Fully Refundable Reservation","Free cancellation applies.",`Good news! 😊 Your reservation is eligible for a full refund if cancelled within the applicable cancellation conditions. I'd be happy to help you with the cancellation whenever you're ready.`),
+R("hotel","Cancellation","Refundable With a Cancellation Penalty","Refundable, property charges a penalty.",`Your reservation is eligible for a refund; however, the property applies a cancellation penalty of [Penalty Amount]. This amount will be deducted from the refund, and the remaining balance will be returned according to the applicable refund conditions.`),
+R("hotel","Change","Changeable With a Fee + Price Difference","Change allowed with fee and possible price difference.",`I've checked your reservation, and changes are allowed! However, the property applies a change fee of [Fee Amount], and there may also be a price difference depending on your new dates or room selection. I'd be happy to check the available options for you. 😊`),
+R("hotel","Change","Changeable Without a Fee + Price Difference","Change allowed, no fee, possible price difference.",`Good news! 😊 Your reservation allows changes without an additional change fee. However, the new dates or room selection may have a different price, so any applicable price difference would need to be covered.`),
+R("hotel","Change","Non-changeable Reservation","Booking can't be modified.",`I've checked the reservation conditions, and unfortunately, this booking doesn't allow modifications. I understand that plans can change, and I wish we had more flexibility available. However, I'd be happy to look into any alternative options we may have.`),
+R("hotel","Miscellaneous","New Booking – Website / Mobile App","Customer wants a new hotel reservation.",`If you're looking to make a new hotel reservation, I'd recommend checking our Expedia website or mobile app. 😊 You can compare different properties, explore available rooms, and check current deals or member discounts to find an option that suits your budget.`),
+R("hotel","Miscellaneous","Hotel-Handled Requests","Only the hotel can handle it.",`For this particular request, the hotel would be the best point of contact, as they handle this matter directly. Would you like me to provide you with their contact details so you can reach them?`),
+R("hotel","Miscellaneous","Get Well Soon / Medical Wishes","Customer is unwell.",`I'm sorry to hear that you're not feeling well. I hope you feel better soon and wish you a smooth and speedy recovery. Please take good care of yourself! 💙`),
+R("hotel","Miscellaneous","Condolences","Customer shares a loss.",`I'm truly sorry for your loss. Please accept my deepest condolences to you and your family. Wishing you strength and comfort during this difficult time. 💙`),
+
+R("car","Cancellation","Non-refundable Reservation","Booking has a non-refundable policy.",`I've checked the reservation details, and unfortunately, this booking has a non-refundable policy. This means the car rental company doesn't allow cancellations with a refund. I understand this might be disappointing, and I appreciate your understanding.`),
+R("car","Cancellation","Fully Refundable Reservation","Free cancellation applies.",`Good news! 😊 Your reservation is eligible for a full refund if cancelled within the applicable cancellation conditions. I'd be happy to help you with the cancellation whenever you're ready.`),
+R("car","Cancellation","Refundable With a Cancellation Penalty","Refundable, rental company charges a penalty.",`Your reservation is eligible for a refund; however, the car rental company applies a cancellation penalty of [Penalty Amount]. This amount will be deducted from the refund, and the remaining balance will be returned according to the applicable refund conditions.`),
+R("car","Change","Non-changeable Reservation","Booking can't be modified; offer cancel & rebook or direct change.",`I've checked the reservation conditions, and unfortunately, this booking can't be changed in any way. I understand that plans can change, and I wish we had more flexibility available. However, I'd be happy to look into the option of cancelling and rebooking, subject to the cancellation conditions, or you can try to make the change directly with the car rental company. 🚗`),
+R("car","Miscellaneous","New Booking – Website / Mobile App","Customer wants a new car rental.",`If you're looking to make a new car rental reservation, I'd recommend checking our Expedia website or mobile app. 😊 You can compare different rental options, explore available vehicles, and check current deals or member discounts to find an option that suits your budget.`),
+R("car","Miscellaneous","Car Rental-Handled Requests","Only the rental company can handle it.",`For this particular request, the car rental company would be the best point of contact, as they handle this matter directly. Would you like me to provide you with their contact details so you can reach them?`),
+R("car","Miscellaneous","Get Well Soon / Medical Wishes","Customer is unwell.",`I'm sorry to hear that you're not feeling well. I hope you feel better soon and wish you a smooth and speedy recovery. Please take good care of yourself! 💙`),
+R("car","Miscellaneous","Condolences","Customer shares a loss.",`I'm truly sorry for your loss. Please accept my deepest condolences to you and your family. Wishing you strength and comfort during this difficult time. 💙`)
+];
+DATA.forEach((d,i)=>{d.id="r"+(i+1);d.ph=[...new Set(d.text.match(/\[[^\]]+\]/g)||[])]});
+const BY=Object.fromEntries(DATA.map(d=>[d.id,d]));
+
+/* ===== STORAGE ===== */
+const store={get(k,f){try{return JSON.parse(localStorage.getItem("rm_"+k))??f}catch(e){return f}},set(k,v){try{localStorage.setItem("rm_"+k,JSON.stringify(v))}catch(e){}}};
+let favs=store.get("favs",[]),recent=store.get("recent",[]),view={k:"all"},query="",vals={};
+
+/* ===== CLIPBOARD ===== */
+async function copy(text){
+  try{await navigator.clipboard.writeText(text);return true}catch(e){}
+  const t=document.createElement("textarea");t.value=text;t.style.cssText="position:fixed;opacity:0";document.body.appendChild(t);t.select();
+  let ok=false;try{ok=document.execCommand("copy")}catch(e){}t.remove();return ok;
+}
+
+/* ===== HELPERS ===== */
+const $=id=>document.getElementById(id);
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const rx=()=>{const w=query.trim().split(/\s+/).filter(Boolean).map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"));return w.length?new RegExp("("+w.join("|")+")","gi"):null};
+const hl=(s,r)=>{s=esc(s);return r?s.replace(r,"<mark>$1</mark>"):s};
+const filled=d=>d.text.replace(/\[[^\]]+\]/g,m=>(vals[d.id]&&vals[d.id][m])||m);
+function body(d,r){
+  return d.text.split(/(\[[^\]]+\])/).map(p=>/^\[[^\]]+\]$/.test(p)?`<span class="ph">${esc((vals[d.id]&&vals[d.id][p])||p)}</span>`:hl(p,r)).join("");
+}
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove("show"),1600)}
+
+/* ===== RENDER ===== */
+function items(){
+  if(query.trim()){const ws=query.toLowerCase().split(/\s+/).filter(Boolean);
+    return DATA.filter(d=>{const h=(d.title+" "+d.desc+" "+d.text+" "+TYPES[d.t]+" "+d.c).toLowerCase();return ws.every(w=>h.includes(w))})}
+  if(view.k=="fav")return favs.map(i=>BY[i]).filter(Boolean);
+  if(view.k=="recent")return recent.map(i=>BY[i]).filter(Boolean);
+  if(view.k=="cat")return DATA.filter(d=>d.t==view.t&&d.c==view.c);
+  if(view.k=="type")return DATA.filter(d=>d.t==view.t);
+  return DATA;
+}
+function card(d,r,tag){
+  return `<article class="card" data-id="${d.id}"><div class="hd"><div><h3>${hl(d.title,r)}${tag?`<span class="tag">${TYPES[d.t]} · ${CATICON[d.c]} ${d.c}</span>`:""}</h3><p class="desc">${hl(d.desc,r)}</p></div></div>
+  <div class="txt">${body(d,r)}</div>
+  ${d.ph.length?`<div class="fields">${d.ph.map(p=>`<label>${esc(p.slice(1,-1))}<input class="ph-in" data-p="${esc(p)}" value="${esc((vals[d.id]&&vals[d.id][p])||"")}" placeholder="optional"></label>`).join("")}</div>`:""}
+  <div class="row"><button class="btn cp" data-a="copy">📋 Copy</button></div></article>`;
+}
+function render(){
+  const r=rx(),list=items(),q=query.trim();
+  let title,crumb;
+  if(q){title="Search results";crumb=`${list.length} match${list.length==1?"":"es"} across all responses`}
+  else if(view.k=="fav"){title="Favorites";crumb="Your starred responses"}
+  else if(view.k=="recent"){title="Recently Used";crumb="Last 10 copied responses"}
+  else if(view.k=="cat"){title=CATICON[view.c]+" "+view.c;crumb=`${TYPES[view.t]} › ${view.c}`}
+  else if(view.k=="type"){title=TYPES[view.t];crumb="All categories"}
+  else{title="All Responses";crumb="Everything in the library"}
+  $("title").textContent=title;$("crumb").textContent=crumb;
+  let h="";
+  if(!list.length){
+    h=`<div class="empty">${q?`No responses match “${esc(q)}”.`:view.k=="fav"?"No favorites yet. Tap ☆ on any response to pin it here.":view.k=="recent"?"Nothing copied yet. Copied responses will show up here.":`No responses in this category yet.<br>Add them in the <code>DATA</code> list at the top of the script.`}</div>`;
+  }else if(!q&&view.k=="all"){
+    for(const t in TYPES){h+=`<div class="grp">${TYPES[t]}</div>`+DATA.filter(d=>d.t==t).map(d=>card(d,r,true)).join("")}
+  }else h=list.map(d=>card(d,r,view.k!="cat"&&view.k!="type")).join("");
+  $("list").innerHTML=h;
+  nav();
+}
+function nav(){
+  const b=(a,i,l,n,on,c)=>`<button data-nav='${a}' title="${l}" aria-label="${l}" class="${c||""} ${on?"on":""}"><span class="ic">${i}</span><span>${l}</span>${n!=null?`<span class="n">${n}</span>`:""}</button>`;
+  const J=JSON.stringify,t0=view.t;
+  let h=`<div class="bar">`;
+  for(const t in TYPES){const [ic,...l]=TYPES[t].split(" ");h+=b(J({k:"type",t}),ic,l.join(" "),null,t0==t,"big")}
+  h+=`</div>`;
+  if(t0)h+=`<div class="bar sub">`+b(J({k:"type",t:t0}),"▦","All",DATA.filter(d=>d.t==t0).length,view.k=="type")+CATS[t0].map(c=>b(J({k:"cat",t:t0,c}),CATICON[c],c,DATA.filter(d=>d.t==t0&&d.c==c).length,view.k=="cat"&&view.c==c)).join("")+`</div>`;
+  $("nav").innerHTML=h;
+}
+
+/* ===== EVENTS ===== */
+$("nav").addEventListener("click",e=>{const b=e.target.closest("[data-nav]");if(!b)return;view=JSON.parse(b.dataset.nav);query="";$("q").value="";render();scrollTo(0,0)});
+$("q").addEventListener("input",e=>{query=e.target.value;render()});
+document.addEventListener("keydown",e=>{if(e.key=="/"&&document.activeElement.tagName!="INPUT"){e.preventDefault();$("q").focus()}if(e.key=="Escape"&&query){query="";$("q").value="";render()}});
+$("list").addEventListener("click",async e=>{
+  const a=e.target.closest("[data-a]");if(!a)return;const c=a.closest(".card"),d=BY[c.dataset.id];
+  if(await copy(filled(d))){
+    recent=[d.id,...recent.filter(i=>i!=d.id)].slice(0,10);store.set("recent",recent);
+    a.textContent="✅ Copied!";a.classList.add("done");toast("Copied to clipboard");
+    setTimeout(()=>{a.textContent="📋 Copy";a.classList.remove("done")},1500);
+    const n=document.querySelector('[data-nav=\'{"k":"recent"}\'] .n');if(n)n.textContent=recent.length;
+  }else toast("Copy failed — select the text and press Ctrl+C");
+});
+$("list").addEventListener("input",e=>{
+  const i=e.target.closest(".ph-in");if(!i)return;const c=i.closest(".card"),d=BY[c.dataset.id];
+  (vals[d.id]=vals[d.id]||{})[i.dataset.p]=i.value.trim();
+  c.querySelector(".txt").innerHTML=body(d,rx());
+});
+render();
+</script>
+</body>
+</html>
